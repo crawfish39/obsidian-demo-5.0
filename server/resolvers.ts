@@ -1,22 +1,24 @@
+import { config } from 'https://deno.land/x/dotenv@v3.2.0/mod.ts';
 import { Pool } from 'https://deno.land/x/postgres/mod.ts';
-import 'https://deno.land/x/dotenv/load.ts';
 
-let pgPort: number | string | undefined = Deno.env.get('PG_PORT');
+const env = config();
+
+let pgPort: number | string | undefined = env.PG_PORT;
 if (typeof pgPort === 'string') {
 	pgPort = parseInt(pgPort as string);
 }
 
-const config = {
-	user: Deno.env.get('PG_USER'),
-	database: Deno.env.get('PG_DATABASE'),
-	password: Deno.env.get('PG_PASSWORD'),
-	hostname: Deno.env.get('PG_HOSTNAME'),
+const dbSettings = {
+	user: env.PG_USER,
+	database: env.PG_DATABASE,
+	password: env.PG_PASSWORD,
+	hostname: env.PG_HOSTNAME,
 	port: pgPort,
-};
+  };
 
-const POOL_CONNECTIONS = 3; // breaks at 10+ due to ElephantSQL
+const POOL_CONNECTIONS = 2; // breaks at 10+ due to ElephantSQL
 
-let pool = new Pool(config, POOL_CONNECTIONS);
+let pool = new Pool(dbSettings, POOL_CONNECTIONS);
 
 const resolvers = {
 	Query: {
@@ -24,8 +26,8 @@ const resolvers = {
 			_a: string,
 			{ input }: { input: { maintenance?: string; size?: string } }
 		) => {
+			const client = await pool.connect();
 			try {
-				const client = await pool.connect();
 				let rows;
 				if (input && input.maintenance) {
 					rows = await client.queryObject<{
@@ -60,21 +62,22 @@ const resolvers = {
 				}
 				console.log('(In resolver getting plants');
 				console.log(rows.rows);
-				await client.release();
 				return rows.rows;
 			} catch (err) {
 				console.log(err);
 				console.log('resetting connection');
-				pool.end();
-				pool = new Pool(config, POOL_CONNECTIONS);
+				pool = new Pool(dbSettings, POOL_CONNECTIONS);
+			} finally {
+				await client.release();
+				await client.end();
 			}
 		},
 		countries: async (
 			a: string,
 			{ input }: { input: { climate?: string } }
 		) => {
+			const client = await pool.connect();
 			try {
-				const client = await pool.connect();
 				let rows;
 				if (input && input.climate) {
 					rows = await client.queryObject<{
@@ -96,8 +99,10 @@ const resolvers = {
 			} catch (err) {
 				console.log(err);
 				console.log('resetting connection');
-				pool.end();
-				pool = new Pool(config, POOL_CONNECTIONS);
+				pool = new Pool(dbSettings, POOL_CONNECTIONS);
+			} finally {
+				await client.release();
+				await client.end();
 			}
 		},
 	},
@@ -114,7 +119,8 @@ const resolvers = {
 					imageurl: string;
 				};
 			}
-		) => {
+			) => {
+			const client = await pool.connect();
 			try {
 				console.log(
 					'In the resolver: ',
@@ -123,7 +129,6 @@ const resolvers = {
 					input.size,
 					input.imageurl
 				);
-				const client = await pool.connect();
 				const rows = await client.queryObject<{
 					id: number;
 					name: string;
@@ -134,20 +139,20 @@ const resolvers = {
 					text: 'INSERT INTO obsidian_demo_schema.plants (name, maintenance, size, imageurl) VALUES ($1, $2, $3, $4) RETURNING *',
 					args: [input.name, input.maintenance, input.size, input.imageurl],
 				});
-				await client.release();
 				return rows.rows[0];
 			} catch (err) {
 				console.log(err);
 				console.log('resetting connection');
-				pool.end();
-				pool = new Pool(config, POOL_CONNECTIONS);
+				pool = new Pool(dbSettings, POOL_CONNECTIONS);
+			} finally {
+				await client.release();
+				await client.end();
 			}
 		},
 
 		deletePlant: async (_a: string, { id }: { id: string }) => {
+			const client = await pool.connect();
 			try {
-				const client = await pool.connect();
-
 				const { rows } = await client.queryObject<{
 					id: number;
 					name: string;
@@ -163,24 +168,25 @@ const resolvers = {
 					args: [id],
 				});
 
-				await client.release();
-
+				
 				const deletedPlant = rows[0];
-
+				
 				return deletedPlant;
 			} catch (err) {
 				console.log(err);
 				console.log('resetting connection');
-				pool.end();
-				pool = new Pool(config, POOL_CONNECTIONS);
+				pool = new Pool(dbSettings, POOL_CONNECTIONS);
+			} finally {
+				await client.release();
+				await client.end();
 			}
 		},
 		addCountry: async (
 			_a: string,
 			{ input }: { input: { climate: string } }
 		) => {
+			const client = await pool.connect();
 			try {
-				const client = await pool.connect();
 				const rows = await client.queryObject<{
 					id: number;
 					name: string;
@@ -190,13 +196,14 @@ const resolvers = {
 					input.name,
 					input.climate
 				);
-				client.release();
 				return rows.rows[0];
 			} catch (err) {
 				console.log(err);
 				console.log('resetting connection');
-				pool.end();
-				pool = new Pool(config, POOL_CONNECTIONS);
+				pool = new Pool(dbSettings, POOL_CONNECTIONS);
+			} finally {
+				await client.release();
+				await client.end();
 			}
 		},
 	},

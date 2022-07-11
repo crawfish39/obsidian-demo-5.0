@@ -1,7 +1,7 @@
 // import { useObsidian } from 'https://deno.land/x/obsidian@v3.2.0/ObsidianWrapper/ObsidianWrapper.jsx';
-import React from 'https://dev.jspm.io/react';
-import ReactDOMServer from 'https://dev.jspm.io/react-dom/server';
-import ReactDOM from 'https://dev.jspm.io/react-dom';
+import React from 'https://jspm.dev/react';
+import ReactDOMServer from 'https://jspm.dev/react-dom/server';
+import ReactDOM from 'https://jspm.dev/react-dom';
 import {
   ObsidianWrapper,
   useObsidian,

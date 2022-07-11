@@ -1,4 +1,4 @@
-import React from 'https://dev.jspm.io/react';
+import React from 'https://jspm.dev/react';
 import BrowserCache from '../src/Browser/CacheClassBrowser.js';
 import { insertTypenames } from '../src/Browser/insertTypenames.js';
 

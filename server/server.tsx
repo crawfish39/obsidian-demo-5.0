@@ -1,7 +1,7 @@
 import {React, ReactDOMServer, ReactDOM } from '../deps.ts';
 import {App} from '../client/app.tsx';
 import {types} from './schema.ts';
-import { resolvers } from './resolvers.ts';
+// import { resolvers } from './resolvers.ts';
 import { routes } from './routes.ts';
 
 const app = new Application();
